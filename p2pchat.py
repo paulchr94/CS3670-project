@@ -15,3 +15,10 @@ def start_server():
         if not data:
             break
         print("Peer:", data.decode())
+
+
+def start_client():
+    s.connect((HOST, PORT))
+    while True:
+        msg = input("You: ")
+        s.sendall(msg.encode())
