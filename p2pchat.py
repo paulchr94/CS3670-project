@@ -1,55 +1,33 @@
 import socket
-import ssl
 import threading
 
+HOST = '127.0.0.1'  # change to peer's IP
+PORT = 12345        # any unused port
 
-def start_server(host='127.0.0.1', port=8443):
-    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    context.load_cert_chain(certfile="peer_cert.pem", keyfile="peer_key.pem")
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((host, port))
-    server_socket.listen(1)
-    print(f"[*] Server listening on {host}:{port}")
-
-    client_socket, addr = server_socket.accept()
-    ssl_socket = context.wrap_socket(client_socket, server_side=True)
-    print(f"[+] Connection from {addr}")
-
+def start_server():
+    s.bind((HOST, PORT))
+    s.listen()
+    conn, addr = s.accept()
+    print(f"Connected by {addr}")
     while True:
-        try:
-            data = ssl_socket.recv(1024)
-            if not data:
-                break
-            print("Peer:", data.decode())
-        except:
+        data = conn.recv(1024)
+        if not data:
             break
-    ssl_socket.close()
-    server_socket.close()
+        print("Peer:", data.decode())
 
 
-def start_client(host='127.0.0.1', port=8443):
-    context = ssl.create_default_context()
-    context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE  # For self-signed certs (use CERT_REQUIRED for real verification)
-
-    raw_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssl_socket = context.wrap_socket(raw_socket, server_hostname=host)
-
-    ssl_socket.connect((host, port))
-    print(f"[+] Connected securely to {host}:{port}")
-
+def start_client():
+    s.connect((HOST, PORT))
     while True:
         msg = input("You: ")
-        ssl_socket.send(msg.encode())
+        s.sendall(msg.encode())
 
 
-if __name__ == "__main__":
-    server_thread = threading.Thread(target=start_server)
-    client_thread = threading.Thread(target=start_client)
 
-    server_thread.start()
-    client_thread.start()
+server_thread = threading.Thread(target=start_server)
+client_thread = threading.Thread(target=start_client)
 
-    server_thread.join()
-    client_thread.join()
+server_thread.start()
+client_thread.start()
